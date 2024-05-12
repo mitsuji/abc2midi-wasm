@@ -4,16 +4,18 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>abc2midi-wasm</title>
-
   </head>
   <body>
+    <form>
+      <button type="button" onclick="Module.callMain();">callMain</button>
+    </form>
     <script type='text/javascript'>
       var Module = {
         noInitialRun: true,
 //        noExitRuntime: true,
-        onRuntimeInitialized: function() {
-            Module.callMain([]);
-        },
+//        onRuntimeInitialized: function() {
+//            Module.callMain([]);
+//        },
         print: (...args) => {
             var text = args.join(' ');
             // These replacements are necessary if you render to raw HTML
