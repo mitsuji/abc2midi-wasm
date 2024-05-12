@@ -7,14 +7,28 @@
   </head>
   <body>
     <form>
-      <button type="button" onclick="Module.callMain();">callMain</button>
+      <button type="button" id="buttonRun">run</button>
     </form>
     <script type='text/javascript'>
       var Module = {
         noInitialRun: true,
-//        onRuntimeInitialized: function() {
-//            Module.callMain([]);
-//        },
+        onRuntimeInitialized: function() {
+            let buttonRun = document.querySelector("#buttonRun");
+            buttonRun.onclick = async (e) => {
+                let abcFilename = "kaerunouta.abc";
+                let midiFilename = "kaerunouta.midi";
+                let resAbc = await fetch(abcFilename);
+                let resBlobAbc = await resAbc.blob();
+                let buffAbc = await resBlobAbc.arrayBuffer();
+                let dataAbc = new Uint8Array(buffAbc);
+//                console.log(dataAbc);
+                FS.writeFile(abcFilename,dataAbc);
+                Module.callMain([abcFilename, "-o", midiFilename]);
+                let dataMidi = FS.readFile(midiFilename);
+//                console.log(dataMidi);
+                downloadBlob(dataMidi, midiFilename, 'audio/midi');
+            };
+        },
         print: (...args) => {
             var text = args.join(' ');
             // These replacements are necessary if you render to raw HTML
@@ -40,6 +54,25 @@
           if (text) console.error('[post-exception status] ' + text);
         };
       };
+
+      function downloadBlob (data, filename, mimeType) {
+        let blob = new Blob([data], {type: mimeType});
+        let url = window.URL.createObjectURL(blob);
+        let downloadURL = function(url) {
+          let a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.style = 'display: none';
+          a.click();
+          a.remove();
+        };
+        downloadURL(url);
+        setTimeout(function() {
+        return window.URL.revokeObjectURL(url);
+        }, 1000);
+      };
+
     </script>
     <script async type="text/javascript" src="abc2midi.js"></script>
   </body>
