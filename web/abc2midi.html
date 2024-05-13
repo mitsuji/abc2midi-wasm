@@ -17,15 +17,9 @@
             buttonRun.onclick = async (e) => {
                 let abcFilename = "kaerunouta.abc";
                 let midiFilename = "kaerunouta.midi";
-                let resAbc = await fetch(abcFilename);
-                let resBlobAbc = await resAbc.blob();
-                let buffAbc = await resBlobAbc.arrayBuffer();
-                let dataAbc = new Uint8Array(buffAbc);
-//                console.log(dataAbc);
-                FS.writeFile(abcFilename,dataAbc);
+                await writeFile(abcFilename,abcFilename);
                 Module.callMain([abcFilename, "-o", midiFilename]);
                 let dataMidi = FS.readFile(midiFilename);
-//                console.log(dataMidi);
                 downloadBlob(dataMidi, midiFilename, 'audio/midi');
             };
         },
@@ -55,6 +49,14 @@
         };
       };
 
+      async function writeFile(url, path) {
+          let res = await fetch(url);
+          let blob = await res.blob();
+          let buff = await blob.arrayBuffer();
+          let data = new Uint8Array(buff);
+          FS.writeFile(path,data);
+      }
+
       function downloadBlob (data, filename, mimeType) {
         let blob = new Blob([data], {type: mimeType});
         let url = window.URL.createObjectURL(blob);
@@ -71,7 +73,7 @@
         setTimeout(function() {
         return window.URL.revokeObjectURL(url);
         }, 1000);
-      };
+      }
 
     </script>
     <script async type="text/javascript" src="abc2midi.js"></script>
