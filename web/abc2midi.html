@@ -4,49 +4,22 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>abc2midi-wasm</title>
+    <script type="text/javascript" src="abc2midi.js"></script>
   </head>
   <body>
     <form>
       <button type="button" id="buttonRun">run</button>
     </form>
-    <script type='text/javascript'>
-      var Module = {
-        noInitialRun: true,
-        onRuntimeInitialized: function() {
-            let buttonRun = document.querySelector("#buttonRun");
-            buttonRun.onclick = async (e) => {
-                let abcFilename = "kaerunouta.abc";
-                let midiFilename = "kaerunouta.midi";
-                await writeFile(abcFilename,abcFilename);
-                Module.callMain([abcFilename, "-o", midiFilename]);
-                let dataMidi = FS.readFile(midiFilename);
-                downloadBlob(dataMidi, midiFilename, 'audio/midi');
-            };
-        },
-        print: (...args) => {
-            var text = args.join(' ');
-            // These replacements are necessary if you render to raw HTML
-            //text = text.replace(/&/g, "&amp;");
-            //text = text.replace(/</g, "&lt;");
-            //text = text.replace(/>/g, "&gt;");
-            //text = text.replace('\n', '<br>', 'g');
-            console.log(text);
-        },
-        setStatus: (text) => {
-            console.log("[status] " + text);
-        },
-        totalDependencies: 0,
-        monitorRunDependencies: (left) => {
-          this.totalDependencies = Math.max(this.totalDependencies, left);
-          Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
-        }
-      };
-      Module.setStatus('Downloading...');
-      window.onerror = () => {
-        Module.setStatus('Exception thrown, see JavaScript console');
-        Module.setStatus = (text) => {
-          if (text) console.error('[post-exception status] ' + text);
-        };
+    <script type='module'>
+      let abc2midi = await createAbc2Midi({noInitialRun: true});
+      let buttonRun = document.querySelector("#buttonRun");
+      buttonRun.onclick = async (e) => {
+          let abcFilename = "kaerunouta.abc";
+          let midiFilename = "kaerunouta.midi";
+          await writeFile(abcFilename,abcFilename);
+          abc2midi.callMain([abcFilename, "-o", midiFilename]);
+          let dataMidi = abc2midi.FS.readFile(midiFilename);
+          downloadBlob(dataMidi, midiFilename, 'audio/midi');
       };
 
       async function writeFile(url, path) {
@@ -54,7 +27,7 @@
           let blob = await res.blob();
           let buff = await blob.arrayBuffer();
           let data = new Uint8Array(buff);
-          FS.writeFile(path,data);
+          abc2midi.FS.writeFile(path,data);
       }
 
       function downloadBlob (data, filename, mimeType) {
@@ -76,6 +49,5 @@
       }
 
     </script>
-    <script async type="text/javascript" src="abc2midi.js"></script>
   </body>
 </html>

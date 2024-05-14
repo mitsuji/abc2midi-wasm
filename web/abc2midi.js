@@ -1,3 +1,11 @@
+
+var createAbc2Midi = (() => {
+  var _scriptName = typeof document != 'undefined' ? document.currentScript?.src : undefined;
+  if (typeof __filename != 'undefined') _scriptName ||= __filename;
+  return (
+function(moduleArg = {}) {
+  var moduleRtn;
+
 // include: shell.js
 // The Module object: Our interface to the outside world. We import
 // and export values on it. There are various ways Module can be used:
@@ -12,7 +20,22 @@
 // after the generated code, you will need to define   var Module = {};
 // before the code. Then that object will be used in the code, and you
 // can continue to use Module afterwards as well.
-var Module = typeof Module != 'undefined' ? Module : {};
+var Module = Object.assign({}, moduleArg);
+
+// Set up the promise that indicates the Module is initialized
+var readyPromiseResolve, readyPromiseReject;
+var readyPromise = new Promise((resolve, reject) => {
+  readyPromiseResolve = resolve;
+  readyPromiseReject = reject;
+});
+["_memory","___indirect_function_table","_main","onRuntimeInitialized"].forEach((prop) => {
+  if (!Object.getOwnPropertyDescriptor(readyPromise, prop)) {
+    Object.defineProperty(readyPromise, prop, {
+      get: () => abort('You are getting ' + prop + ' on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js'),
+      set: () => abort('You are setting ' + prop + ' on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js'),
+    });
+  }
+});
 
 // Determine the runtime environment we are in. You can customize this by
 // setting the ENVIRONMENT setting at compile time (see settings.js).
@@ -118,16 +141,7 @@ readAsync = (filename, onload, onerror, binary = true) => {
 
   arguments_ = process.argv.slice(2);
 
-  if (typeof module != 'undefined') {
-    module['exports'] = Module;
-  }
-
-  process.on('uncaughtException', (ex) => {
-    // suppress ExitStatus exceptions from showing an error
-    if (ex !== 'unwind' && !(ex instanceof ExitStatus) && !(ex.context instanceof ExitStatus)) {
-      throw ex;
-    }
-  });
+  // MODULARIZE will export the module in the proper place outside, we don't need to export here
 
   quit_ = (status, toThrow) => {
     process.exitCode = status;
@@ -149,6 +163,11 @@ if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
     scriptDirectory = self.location.href;
   } else if (typeof document != 'undefined' && document.currentScript) { // web
     scriptDirectory = document.currentScript.src;
+  }
+  // When MODULARIZE, this JS may be executed later, after document.currentScript
+  // is gone, so we saved it, and we use it here instead of any other info.
+  if (_scriptName) {
+    scriptDirectory = _scriptName;
   }
   // blob urls look like blob:http://site.com/etc/etc and we cannot infer anything from them.
   // otherwise, slice off the final part of the url to find the script directory.
@@ -593,6 +612,7 @@ function abort(what) {
   /** @suppress {checkTypes} */
   var e = new WebAssembly.RuntimeError(what);
 
+  readyPromiseReject(e);
   // Throw the error whether or not MODULARIZE is set because abort is used
   // in code paths apart from instantiation where an exception is expected
   // to be thrown when abort is called.
@@ -790,13 +810,15 @@ function createWasm() {
       return Module['instantiateWasm'](info, receiveInstance);
     } catch(e) {
       err(`Module.instantiateWasm callback failed with error: ${e}`);
-        return false;
+        // If instantiation fails, reject the module ready promise.
+        readyPromiseReject(e);
     }
   }
 
   if (!wasmBinaryFile) wasmBinaryFile = findWasmBinary();
 
-  instantiateAsync(wasmBinary, wasmBinaryFile, info, receiveInstantiationResult);
+  // If instantiation fails, reject the module ready promise.
+  instantiateAsync(wasmBinary, wasmBinaryFile, info, receiveInstantiationResult).catch(readyPromiseReject);
   return {}; // no exports yet; we'll fill them in later
 }
 
@@ -4038,6 +4060,7 @@ function dbg(...args) {
       // if exit() was called explicitly, warn the user if the runtime isn't actually being shut down
       if (keepRuntimeAlive() && !implicit) {
         var msg = `program exited (with status: ${status}), but keepRuntimeAlive() is set (counter=${runtimeKeepaliveCounter}) due to an async operation, so halting execution but not exiting the runtime or preventing further async execution (you can use emscripten_force_exit, if you want to force a true shutdown)`;
+        readyPromiseReject(msg);
         err(msg);
       }
   
@@ -4176,6 +4199,7 @@ function dbg(...args) {
       return ret;
     };
 
+
   FS.createPreloadedFile = FS_createPreloadedFile;
   FS.staticInit();;
 function checkIncomingModuleAPI() {
@@ -4221,6 +4245,7 @@ var dynCall_jiji = Module['dynCall_jiji'] = createExportWrapper('dynCall_jiji', 
 // === Auto-generated postamble setup entry stuff ===
 
 Module['callMain'] = callMain;
+Module['FS'] = FS;
 var missingLibrarySymbols = [
   'writeI53ToI64',
   'writeI53ToI64Clamped',
@@ -4480,7 +4505,6 @@ var unexportedSymbols = [
   'FS_getMode',
   'FS_stdin_getChar_buffer',
   'FS_stdin_getChar',
-  'FS',
   'FS_createDataFile',
   'MEMFS',
   'TTY',
@@ -4579,6 +4603,7 @@ function run(args = arguments_) {
 
     preMain();
 
+    readyPromiseResolve(Module);
     if (Module['onRuntimeInitialized']) Module['onRuntimeInitialized']();
 
     if (shouldRunNow) callMain(args);
@@ -4656,3 +4681,39 @@ run();
 
 // end include: postamble.js
 
+// include: postamble_modularize.js
+// In MODULARIZE mode we wrap the generated code in a factory function
+// and return either the Module itself, or a promise of the module.
+//
+// We assign to the `moduleRtn` global here and configure closure to see
+// this as and extern so it won't get minified.
+
+moduleRtn = readyPromise;
+
+// Assertion for attempting to access module properties on the incoming
+// moduleArg.  In the past we used this object as the prototype of the module
+// and assigned properties to it, but now we return a distinct object.  This
+// keeps the instance private until it is ready (i.e the promise has been
+// resolved).
+for (const prop of Object.keys(Module)) {
+  if (!(prop in moduleArg)) {
+    Object.defineProperty(moduleArg, prop, {
+      configurable: true,
+      get() {
+        abort(`Access to module property ('${prop}') is no longer possible via the module constructor argument; Instead, use the result of the module constructor.`)
+      }
+    });
+  }
+}
+// end include: postamble_modularize.js
+
+
+
+  return moduleRtn;
+}
+);
+})();
+if (typeof exports === 'object' && typeof module === 'object')
+  module.exports = createAbc2Midi;
+else if (typeof define === 'function' && define['amd'])
+  define([], () => createAbc2Midi);

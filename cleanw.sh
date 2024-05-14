@@ -8,7 +8,7 @@ rm build/queues.o
 rm build/parser2.o
 rm build/stresspat.o
 rm build/music_utils.o
-rm build/abc2midi.html
+#rm build/abc2midi.html
 rm build/abc2midi.js
 rm build/abc2midi.wasm
 
@@ -23,6 +23,6 @@ rm build/stream.o
 rm build/tables.o
 rm build/timidity.o
 rm build/midi2raw.o
-rm build/midi2raw.html
+#rm build/midi2raw.html
 rm build/midi2raw.js
 rm build/midi2raw.wasm
