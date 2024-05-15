@@ -1,4 +1,4 @@
-import { FFmpeg } from "/@ffmpeg/ffmpeg/dist/esm/index.js";
+import { FFmpeg } from "./@ffmpeg/ffmpeg/dist/esm/index.js";
 
 window.onload = async (e) => {
     document.querySelector("#buttonPlay").onclick = async (e) => {
@@ -72,7 +72,7 @@ async function runRaw2Wav (dataRaw) {
             console.log(message);
         });
         await ffmpeg.load({
-            coreURL: "/@ffmpeg/core/dist/esm/ffmpeg-core.js",
+            coreURL: "../../../core/dist/esm/ffmpeg-core.js",
         });
     }
     await ffmpeg.writeFile(rawFilename, dataRaw);
