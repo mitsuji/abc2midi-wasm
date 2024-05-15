@@ -1,11 +1,22 @@
 import { FFmpeg } from "/@ffmpeg/ffmpeg/dist/esm/index.js";
 
 window.onload = async (e) => {
-    document.querySelector("#buttonRun").onclick = async (e) => {
+    document.querySelector("#buttonPlay").onclick = async (e) => {
         let elemTextAbc = document.querySelector("#textAbc");
         let dataMidi = await runAbc2Midi (elemTextAbc.value);
         let dataRaw = await runMidi2Raw (dataMidi);
-        await runRaw2Wav (dataRaw);
+        let dataWav = await runRaw2Wav (dataRaw);
+        let blobWav = new Blob ([dataWav],{type:"audio/wav"});
+        let reader = new FileReader();
+        reader.onload = (e) => {
+            let audio = new Audio ();
+            document.querySelector("#buttonStop").onclick = (e) => {
+                audio.pause();
+            };
+            audio.src = reader.result;
+            audio.play();
+        };
+        reader.readAsDataURL(blobWav);
     };
 }
 
@@ -16,11 +27,12 @@ async function runAbc2Midi (textAbc) {
     if (abc2midi === null) {
         abc2midi = await createAbc2Midi({noInitialRun: true});
     }
-    let te = new TextEncoder();
-    let dataAbc = te.encode(textAbc);
+    let encoder = new TextEncoder();
+    let dataAbc = encoder.encode(textAbc);
     abc2midi.FS.writeFile(abcFilename,dataAbc);
     abc2midi.callMain([abcFilename, "-o", midiFilename]);
-    return abc2midi.FS.readFile(midiFilename);
+    let dataMidi = abc2midi.FS.readFile(midiFilename);
+    return dataMidi;
 }
 
 
@@ -28,8 +40,8 @@ let midi2raw = null;
 async function runMidi2Raw (dataMidi) {
     const cfgPath = "freepats/timidity.cfg";
     const pianoPatPath = "freepats/Tone_000/000_Acoustic_Grand_Piano.pat";
-    const midiFilename = "kaerunouta.midi";
-    const rawFilename = "kaerunouta.raw";
+    const midiFilename = "file1.midi";
+    const rawFilename = "file1.raw";
     if (midi2raw === null) {
         midi2raw = await createMidi2Raw({noInitialRun: true});
         let dataPianoPat = await fetchFile(pianoPatPath);
@@ -41,7 +53,8 @@ async function runMidi2Raw (dataMidi) {
     }
     midi2raw.FS.writeFile(midiFilename,dataMidi);
     midi2raw.callMain(["-cfg",cfgPath,"-o",rawFilename,midiFilename]);
-    return midi2raw.FS.readFile(rawFilename);
+    let dataRaw = midi2raw.FS.readFile(rawFilename);
+    return dataRaw;
 }
 
 
@@ -68,8 +81,9 @@ async function runRaw2Wav (dataRaw) {
     await ffmpeg.exec(["-f","s16le","-ar","44.1k","-ac","2","-i",rawFilename,wavFilename]);
     console.timeEnd('exec');
     console.log('Complete transcoding');
-    const dataWav = await ffmpeg.readFile(wavFilename);
-    downloadBlob(dataWav, wavFilename, 'audio/wav');
+    let dataWav = await ffmpeg.readFile(wavFilename);
+    return dataWav;
+//    downloadBlob(dataWav, wavFilename, 'audio/wav');
 }
 
 async function fetchFile(url) {
