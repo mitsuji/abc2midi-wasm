@@ -16,6 +16,9 @@ http {
   uwsgi_temp_path ${PWD}/nginx_tmp/uwsgi 1 2;
   scgi_temp_path ${PWD}/nginx_tmp/scgi 1 2;
   include /etc/nginx/mime.types;
+  types {
+    application/wasm wasm;
+  }
 #  access_log /dev/stdout;
   access_log off;
   server {  
