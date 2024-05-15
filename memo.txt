@@ -1,0 +1,2 @@
+./midi2raw.exe -cfg /usr/share/timidity/timidity.cfg -o kaerunouta.raw ../../../web/kaerunouta.midi
+ffmpeg -f s16le -ar 44.1k -ac 2 -i kaerunouta.raw kaerunouta.wav

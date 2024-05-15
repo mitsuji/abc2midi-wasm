@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>midi2raw</title>
+    <script type="text/javascript" src="midi2raw.js"></script>
+  </head>
+  <body>
+    <form>
+      <button type="button" id="buttonRun">run</button>
+    </form>
+    <script type='module'>
+      let midi2raw = await createMidi2Raw({noInitialRun: true});
+      const pianoPatPath = "freepats/Tone_000/000_Acoustic_Grand_Piano.pat";
+      const cfgPath = "freepats/timidity.cfg";
+      midi2raw.FS.mkdir("freepats");
+      midi2raw.FS.mkdir("freepats/Tone_000");
+      await writeFile(pianoPatPath,pianoPatPath);
+      await writeFile(cfgPath,cfgPath);
+      let buttonRun = document.querySelector("#buttonRun");
+      buttonRun.onclick = async (e) => {
+          let midiFilename = "kaerunouta.midi";
+          let rawFilename = "kaerunouta.raw";
+          await writeFile(midiFilename,midiFilename);
+          midi2raw.callMain(["-cfg",cfgPath,"-o",rawFilename,midiFilename]);
+          let dataRaw = midi2raw.FS.readFile(rawFilename);
+          downloadBlob(dataRaw, rawFilename, 'application/octet-stream');
+      };
+
+      async function writeFile(url, path) {
+          let res = await fetch(url);
+          let blob = await res.blob();
+          let buff = await blob.arrayBuffer();
+          let data = new Uint8Array(buff);
+          midi2raw.FS.writeFile(path,data);
+      }
+
+      function downloadBlob (data, filename, mimeType) {
+        let blob = new Blob([data], {type: mimeType});
+        let url = window.URL.createObjectURL(blob);
+        let downloadURL = function(url) {
+          let a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.style = 'display: none';
+          a.click();
+          a.remove();
+        };
+        downloadURL(url);
+        setTimeout(function() {
+        return window.URL.revokeObjectURL(url);
+        }, 1000);
+      }
+
+    </script>
+    <script async type="text/javascript" src="midi2raw.js"></script>
+  </body>
+</html>

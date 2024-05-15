@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>abc2midi</title>
+    <script type="text/javascript" src="abc2midi.js"></script>
+    <script type="text/javascript" src="midi2raw.js"></script>
+    <script type="module" src="index.js"></script>
+  </head>
+  <body>
+    <form>
+      <div>
+        <textarea id="textAbc" cols="80" rows="20">X:1
+T:かえるのうた
+M:C
+K:C
+C2 D2 E2 F2 E2 D2 C4 |
+E2 F2 G2 A2 G2 F2 E4 |
+C4 C4 C4 C4 |
+C C D D E E F F E2 D2 C4 |]
+</textarea>
+      </div>
+      <div>
+        <button type="button" id="buttonPlay">play</button>
+        <button type="button" id="buttonStop">stop</button>
+      </div>
+    </form>
+  </body>
+</html>
