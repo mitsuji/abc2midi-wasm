@@ -38,7 +38,7 @@ int raw2wav (char * rawFilename, char * wavFilename) {
     return 1;
   }
 
-  // size of rafFile
+  // size of rawFile
   int rawFileSize;
   {
     fseek(rawFile, 0, SEEK_END);
