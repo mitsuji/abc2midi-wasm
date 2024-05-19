@@ -58,33 +58,20 @@ async function runMidi2Raw (dataMidi) {
 }
 
 
-let ffmpeg = null;
+let raw2wav = null;
 async function runRaw2Wav (dataRaw) {
-    const rawFilename = "file1.raw";
-    const wavFilename = "file1.wav";
-    if (ffmpeg === null) {
-        ffmpeg = new FFmpeg();
-        ffmpeg.on("log", ({ message }) => {
-            console.log(message);
-        })
-        ffmpeg.on("progress", ({ progress, time }) => {
-            let message = `${progress * 100} %, time: ${time / 1000000} s`;
-            console.log(message);
-        });
-        await ffmpeg.load({
-            coreURL: "../../../core/dist/esm/ffmpeg-core.js",
-        });
+    const rawFilename = "file1.raw"
+    const wavFilename = "file1.wav"
+    if (raw2wav === null) {
+        raw2wav = await createRaw2Wav({noInitialRun: true});
     }
-    await ffmpeg.writeFile(rawFilename, dataRaw);
-    console.log('Start transcoding');
-    console.time('exec');
-    await ffmpeg.exec(["-f","s16le","-ar","44.1k","-ac","2","-i",rawFilename,wavFilename]);
-    console.timeEnd('exec');
-    console.log('Complete transcoding');
-    let dataWav = await ffmpeg.readFile(wavFilename);
+    raw2wav.FS.writeFile(rawFilename,dataRaw);
+    raw2wav.callMain([rawFilename,wavFilename]);
+    let dataWav = raw2wav.FS.readFile(wavFilename);
     return dataWav;
-//    downloadBlob(dataWav, wavFilename, 'audio/wav');
 }
+
+
 
 async function fetchFile(url) {
     let res = await fetch(url);
