@@ -1,4 +1,3 @@
-import { FFmpeg } from "./@ffmpeg/ffmpeg/dist/esm/index.js";
 
 window.onload = async (e) => {
     document.querySelector("#buttonPlay").onclick = async (e) => {
