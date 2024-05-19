@@ -26,3 +26,6 @@ rm build/midi2raw.o
 #rm build/midi2raw.html
 rm build/midi2raw.js
 rm build/midi2raw.wasm
+
+rm build/raw2wav.js
+rm build/raw2wav.wasm
