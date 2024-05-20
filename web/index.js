@@ -2,22 +2,52 @@
 window.onload = async (e) => {
     document.querySelector("#buttonPlay").onclick = async (e) => {
         let elemTextAbc = document.querySelector("#textAbc");
+
+        let dataSvg = await runAbcm2Ps (elemTextAbc.value);
+        {
+            let blobSvg = new Blob ([dataSvg],{type:"image/svg+xml"});
+            let reader = new FileReader();
+            reader.onload = (e) => {
+                let imageSvg = document.querySelector("#imageSvg");
+                imageSvg.src = reader.result;
+            };
+            reader.readAsDataURL(blobSvg);
+        }
+
         let dataMidi = await runAbc2Midi (elemTextAbc.value);
         let dataRaw = await runMidi2Raw (dataMidi);
         let dataWav = await runRaw2Wav (dataRaw);
-        let blobWav = new Blob ([dataWav],{type:"audio/wav"});
-        let reader = new FileReader();
-        reader.onload = (e) => {
-            let audio = new Audio ();
-            document.querySelector("#buttonStop").onclick = (e) => {
-                audio.pause();
+        {
+            let blobWav = new Blob ([dataWav],{type:"audio/wav"});
+            let reader = new FileReader();
+            reader.onload = (e) => {
+                let audio = new Audio ();
+                document.querySelector("#buttonStop").onclick = (e) => {
+                    audio.pause();
+                };
+                audio.src = reader.result;
+                audio.play();
             };
-            audio.src = reader.result;
-            audio.play();
-        };
-        reader.readAsDataURL(blobWav);
+            reader.readAsDataURL(blobWav);
+        }
     };
 }
+
+let abcm2ps = null;
+async function runAbcm2Ps (textAbc) {
+    const abcFilename = "file1.abc"
+    const svgFilename = "file1"
+    if (abcm2ps === null) {
+        abcm2ps = await createAbcm2Ps({noInitialRun: true});
+    }
+    let encoder = new TextEncoder();
+    let dataAbc = encoder.encode(textAbc);
+    abcm2ps.FS.writeFile(abcFilename,dataAbc);
+    abcm2ps.callMain([abcFilename, "-g", "-O", svgFilename]);
+    let dataSvg = abcm2ps.FS.readFile(svgFilename + "001.svg");
+    return dataSvg;
+}
+
 
 let abc2midi = null;
 async function runAbc2Midi (textAbc) {

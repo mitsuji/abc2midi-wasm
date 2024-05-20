@@ -8,3 +8,6 @@ cp build/midi2raw.wasm web/midi2raw.wasm
 
 cp build/raw2wav.js web/raw2wav.js
 cp build/raw2wav.wasm web/raw2wav.wasm
+
+cp build/abcm2ps.js web/abcm2ps.js
+cp build/abcm2ps.wasm web/abcm2ps.wasm
