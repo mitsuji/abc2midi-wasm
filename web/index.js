@@ -1,8 +1,7 @@
 
 window.onload = async (e) => {
-    document.querySelector("#buttonPlay").onclick = async (e) => {
-        let elemTextAbc = document.querySelector("#textAbc");
-
+    let elemTextAbc = document.querySelector("#textAbc");
+    let updateScore = async () => {
         let dataSvg = await runAbcm2Ps (elemTextAbc.value);
         {
             let blobSvg = new Blob ([dataSvg],{type:"image/svg+xml"});
@@ -13,7 +12,13 @@ window.onload = async (e) => {
             };
             reader.readAsDataURL(blobSvg);
         }
+    }
+    updateScore();
 
+    elemTextAbc.oninput = async (e) => {
+        updateScore();
+    };
+    document.querySelector("#buttonPlay").onclick = async (e) => {
         let dataMidi = await runAbc2Midi (elemTextAbc.value);
         let dataRaw = await runMidi2Raw (dataMidi);
         let dataWav = await runRaw2Wav (dataRaw);
