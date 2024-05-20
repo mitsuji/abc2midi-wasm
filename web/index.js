@@ -37,9 +37,10 @@ let abcm2ps = null;
 async function runAbcm2Ps (textAbc) {
     const abcFilename = "file1.abc"
     const svgFilename = "file1"
-    if (abcm2ps === null) {
-        abcm2ps = await createAbcm2Ps({noInitialRun: true});
-    }
+//    if (abcm2ps === null) {
+//        abcm2ps = await createAbcm2Ps();
+//    }
+    abcm2ps = await createAbcm2Ps();
     let encoder = new TextEncoder();
     let dataAbc = encoder.encode(textAbc);
     abcm2ps.FS.writeFile(abcFilename,dataAbc);
@@ -54,7 +55,7 @@ async function runAbc2Midi (textAbc) {
     const abcFilename = "file1.abc"
     const midiFilename = "file1.midi"
     if (abc2midi === null) {
-        abc2midi = await createAbc2Midi({noInitialRun: true});
+        abc2midi = await createAbc2Midi();
     }
     let encoder = new TextEncoder();
     let dataAbc = encoder.encode(textAbc);
@@ -72,7 +73,7 @@ async function runMidi2Raw (dataMidi) {
     const midiFilename = "file1.midi";
     const rawFilename = "file1.raw";
     if (midi2raw === null) {
-        midi2raw = await createMidi2Raw({noInitialRun: true});
+        midi2raw = await createMidi2Raw();
         let dataPianoPat = await fetchFile(pianoPatPath);
         let dataCfg = await fetchFile(cfgPath);
         midi2raw.FS.mkdir("freepats");
@@ -92,7 +93,7 @@ async function runRaw2Wav (dataRaw) {
     const rawFilename = "file1.raw"
     const wavFilename = "file1.wav"
     if (raw2wav === null) {
-        raw2wav = await createRaw2Wav({noInitialRun: true});
+        raw2wav = await createRaw2Wav();
     }
     raw2wav.FS.writeFile(rawFilename,dataRaw);
     raw2wav.callMain([rawFilename,wavFilename]);
