@@ -5,22 +5,23 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>abc2midi</title>
+    <script type="text/javascript" src="abcm2ps.js"></script>
     <script type="text/javascript" src="abc2midi.js"></script>
     <script type="text/javascript" src="midi2raw.js"></script>
     <script type="text/javascript" src="raw2wav.js"></script>
     <script type="module" src="index.js"></script>
   </head>
   <body>
+    <img id="imageSvg">
     <form>
       <div>
         <textarea id="textAbc" cols="80" rows="20">X:1
 T:かえるのうた
 M:C
 K:C
-C2 D2 E2 F2 E2 D2 C4 |
-E2 F2 G2 A2 G2 F2 E4 |
-C4 C4 C4 C4 |
-C C D D E E F F E2 D2 C4 |]
+C2 D2 E2 F2 | E2 D2 C4 | E2 F2 G2 A2 |
+G2 F2 E4 | C2 z2 C2 z2 | C2 z2 C2 z2 |
+C C D D E E F F | E2 D2 C4 |]
 </textarea>
       </div>
       <div>

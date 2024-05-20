@@ -1,30 +1,66 @@
 
 window.onload = async (e) => {
+    let elemTextAbc = document.querySelector("#textAbc");
+    let updateScore = async () => {
+        let dataSvg = await runAbcm2Ps (elemTextAbc.value);
+        {
+            let blobSvg = new Blob ([dataSvg],{type:"image/svg+xml"});
+            let reader = new FileReader();
+            reader.onload = (e) => {
+                let imageSvg = document.querySelector("#imageSvg");
+                imageSvg.src = reader.result;
+            };
+            reader.readAsDataURL(blobSvg);
+        }
+    }
+    updateScore();
+
+    elemTextAbc.oninput = async (e) => {
+        updateScore();
+    };
     document.querySelector("#buttonPlay").onclick = async (e) => {
-        let elemTextAbc = document.querySelector("#textAbc");
         let dataMidi = await runAbc2Midi (elemTextAbc.value);
         let dataRaw = await runMidi2Raw (dataMidi);
         let dataWav = await runRaw2Wav (dataRaw);
-        let blobWav = new Blob ([dataWav],{type:"audio/wav"});
-        let reader = new FileReader();
-        reader.onload = (e) => {
-            let audio = new Audio ();
-            document.querySelector("#buttonStop").onclick = (e) => {
-                audio.pause();
+        {
+            let blobWav = new Blob ([dataWav],{type:"audio/wav"});
+            let reader = new FileReader();
+            reader.onload = (e) => {
+                let audio = new Audio ();
+                document.querySelector("#buttonStop").onclick = (e) => {
+                    audio.pause();
+                };
+                audio.src = reader.result;
+                audio.play();
             };
-            audio.src = reader.result;
-            audio.play();
-        };
-        reader.readAsDataURL(blobWav);
+            reader.readAsDataURL(blobWav);
+        }
     };
 }
+
+let abcm2ps = null;
+async function runAbcm2Ps (textAbc) {
+    const abcFilename = "file1.abc"
+    const svgFilename = "file1"
+//    if (abcm2ps === null) {
+//        abcm2ps = await createAbcm2Ps();
+//    }
+    abcm2ps = await createAbcm2Ps();
+    let encoder = new TextEncoder();
+    let dataAbc = encoder.encode(textAbc);
+    abcm2ps.FS.writeFile(abcFilename,dataAbc);
+    abcm2ps.callMain([abcFilename, "-g", "-O", svgFilename]);
+    let dataSvg = abcm2ps.FS.readFile(svgFilename + "001.svg");
+    return dataSvg;
+}
+
 
 let abc2midi = null;
 async function runAbc2Midi (textAbc) {
     const abcFilename = "file1.abc"
     const midiFilename = "file1.midi"
     if (abc2midi === null) {
-        abc2midi = await createAbc2Midi({noInitialRun: true});
+        abc2midi = await createAbc2Midi();
     }
     let encoder = new TextEncoder();
     let dataAbc = encoder.encode(textAbc);
@@ -42,7 +78,7 @@ async function runMidi2Raw (dataMidi) {
     const midiFilename = "file1.midi";
     const rawFilename = "file1.raw";
     if (midi2raw === null) {
-        midi2raw = await createMidi2Raw({noInitialRun: true});
+        midi2raw = await createMidi2Raw();
         let dataPianoPat = await fetchFile(pianoPatPath);
         let dataCfg = await fetchFile(cfgPath);
         midi2raw.FS.mkdir("freepats");
@@ -62,7 +98,7 @@ async function runRaw2Wav (dataRaw) {
     const rawFilename = "file1.raw"
     const wavFilename = "file1.wav"
     if (raw2wav === null) {
-        raw2wav = await createRaw2Wav({noInitialRun: true});
+        raw2wav = await createRaw2Wav();
     }
     raw2wav.FS.writeFile(rawFilename,dataRaw);
     raw2wav.callMain([rawFilename,wavFilename]);
