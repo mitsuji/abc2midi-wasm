@@ -1,3 +1,6 @@
 /build/
 /nginx_tmp/
-nginx.conf
+/nginx.conf
+/deps/abcm2ps/Makefile
+/deps/abcm2ps/config.h
+

@@ -18,7 +18,7 @@ window.onload = async (e) => {
     elemTextAbc.oninput = async (e) => {
         updateScore();
     };
-    document.querySelector("#buttonCompose").onclick = async (e) => {
+    document.querySelector("#buttonEncode").onclick = async (e) => {
         let dataMidi = await runAbc2Midi (elemTextAbc.value);
         let dataRaw = await runMidi2Raw (dataMidi);
         let dataWav = await runRaw2Wav (dataRaw);
@@ -84,7 +84,7 @@ async function runMidi2Raw (dataMidi) {
         midi2raw.FS.writeFile(pianoPatPath,dataPianoPat);
     }
     midi2raw.FS.writeFile(midiFilename,dataMidi);
-    midi2raw.callMain(["-cfg",cfgPath,"-o",rawFilename,midiFilename]);
+    midi2raw.callMain(["-cfg",cfgPath,"-o",rawFilename,midiFilename, "-r", "44100", "-s", "16", "-c", "2"]);
     let dataRaw = midi2raw.FS.readFile(rawFilename);
     return dataRaw;
 }
@@ -98,7 +98,7 @@ async function runRaw2Wav (dataRaw) {
         raw2wav = await createRaw2Wav();
     }
     raw2wav.FS.writeFile(rawFilename,dataRaw);
-    raw2wav.callMain([rawFilename,wavFilename]);
+    raw2wav.callMain([rawFilename,wavFilename,"44100","16","2"]);
     let dataWav = raw2wav.FS.readFile(wavFilename);
     return dataWav;
 }

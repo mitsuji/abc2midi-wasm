@@ -18,24 +18,49 @@ typedef struct {
     unsigned int    Subchunk2Size;    // data length
 } WaveHeader;
 
-int raw2wav (char * rawFilename, char * wavFilename);
+int raw2wav (char * rawFilename, char * wavFilename,
+             unsigned int rate, unsigned short bps, unsigned short channels);
 
 
 
 int main(int argc, char *argv[])
 {
-  return raw2wav (argv[1],argv[2]);
+  unsigned int rate;
+  unsigned short bps, channels;
+  if (argc < 3) {
+    printf("Usage: raw2wav rawfile wavfile\n"
+           "               [rate] [sample_width] [channels]\n");
+    return 1;
+  }
+  if (argc >= 4) {
+    rate = atoi(argv[3]);
+  } else {
+    rate = 44100;
+  }
+  if (argc >= 5) {
+    bps = atoi(argv[4]);
+  } else {
+    bps = 16;
+  }
+  if (argc >= 6) {
+    channels = atoi(argv[5]);
+  } else {
+    channels = 2;
+  }
+
+  return raw2wav (argv[1],argv[2],rate,bps,channels);
 }
 
 
 
-int raw2wav (char * rawFilename, char * wavFilename) {
+int raw2wav (char * rawFilename, char * wavFilename,
+             unsigned int rate, unsigned short bps, unsigned short channels) {
 
   // open rawFile
   FILE * rawFile;
   rawFile = fopen(rawFilename, "rb");
   if (!rawFile) {
-    return 1;
+    return 2;
   }
 
   // size of rawFile
@@ -53,11 +78,11 @@ int raw2wav (char * rawFilename, char * wavFilename) {
   memcpy(waveHeader.Subchunk1ID,"fmt ",4);
   waveHeader.Subchunk1Size = 16;
   waveHeader.AudioFormat = 1;
-  waveHeader.NumChannels = 2;
-  waveHeader.SampleRate = 44100;
+  waveHeader.NumChannels = channels;
+  waveHeader.SampleRate = rate;
   waveHeader.ByteRate = waveHeader.SampleRate * waveHeader.NumChannels * waveHeader.BitsPerSample / 8;
   waveHeader.BlockAlign = waveHeader.NumChannels * waveHeader.BitsPerSample / 8;
-  waveHeader.BitsPerSample = 16;
+  waveHeader.BitsPerSample = bps;
   memcpy(waveHeader.Subchunk2ID,"data",4);
   waveHeader.Subchunk2Size = rawFileSize;
 
@@ -65,7 +90,7 @@ int raw2wav (char * rawFilename, char * wavFilename) {
   FILE * wavFile;
   wavFile = fopen(wavFilename, "wb");
   if (!wavFile) {
-    return 2;
+    return 3;
   }
 
   // copy header
