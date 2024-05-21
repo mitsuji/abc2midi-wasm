@@ -18,7 +18,7 @@ window.onload = async (e) => {
     elemTextAbc.oninput = async (e) => {
         updateScore();
     };
-    document.querySelector("#buttonPlay").onclick = async (e) => {
+    document.querySelector("#buttonCompose").onclick = async (e) => {
         let dataMidi = await runAbc2Midi (elemTextAbc.value);
         let dataRaw = await runMidi2Raw (dataMidi);
         let dataWav = await runRaw2Wav (dataRaw);
@@ -26,10 +26,7 @@ window.onload = async (e) => {
             let blobWav = new Blob ([dataWav],{type:"audio/wav"});
             let reader = new FileReader();
             reader.onload = (e) => {
-                let audio = new Audio ();
-                document.querySelector("#buttonStop").onclick = (e) => {
-                    audio.pause();
-                };
+                let audio = document.querySelector("#audioWav");
                 audio.src = reader.result;
                 audio.play();
             };
