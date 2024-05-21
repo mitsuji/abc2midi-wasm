@@ -45,4 +45,4 @@ emcc -c -O3 deps/abcm2ps/parse.c    -obuild/parse.o
 emcc -c -O3 deps/abcm2ps/subs.c     -obuild/subs.o
 emcc -c -O3 deps/abcm2ps/svg.c      -obuild/svg.o
 emcc -c -O3 deps/abcm2ps/syms.c     -obuild/syms.o
-emcc -obuild/abcm2ps.js build/abcm2ps.o build/abcparse.o build/buffer.o build/deco.o build/draw.o build/format.o build/front.o build/glyph.o build/music.o build/parse.o build/subs.o build/svg.o build/syms.o -sEXPORTED_RUNTIME_METHODS=FS,callMain -sMODULARIZE -sEXPORT_NAME=createAbcm2Ps -sINVOKE_RUN=0 -sEXIT_RUNTIME=1
+emcc -obuild/abcm2ps.js build/abcm2ps.o build/abcparse.o build/buffer.o build/deco.o build/draw.o build/format.o build/front.o build/glyph.o build/music.o build/parse.o build/subs.o build/svg.o build/syms.o -sEXPORTED_RUNTIME_METHODS=FS,callMain -sMODULARIZE -sEXPORT_NAME=createAbcm2Ps -sINVOKE_RUN=0
