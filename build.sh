@@ -46,3 +46,17 @@ emcc -c -O3 deps/abcm2ps/subs.c     -obuild/subs.o
 emcc -c -O3 deps/abcm2ps/svg.c      -obuild/svg.o
 emcc -c -O3 deps/abcm2ps/syms.c     -obuild/syms.o
 emcc -obuild/abcm2ps.js build/abcm2ps.o build/abcparse.o build/buffer.o build/deco.o build/draw.o build/format.o build/front.o build/glyph.o build/music.o build/parse.o build/subs.o build/svg.o build/syms.o -sEXPORTED_RUNTIME_METHODS=FS,callMain -sMODULARIZE -sEXPORT_NAME=createAbcm2Ps -sINVOKE_RUN=0
+
+
+
+cp build/abc2midi.js web/js/abc2midi.js
+cp build/abc2midi.wasm web/js/abc2midi.wasm
+
+cp build/midi2raw.js web/js/midi2raw.js
+cp build/midi2raw.wasm web/js/midi2raw.wasm
+
+cp build/raw2wav.js web/js/raw2wav.js
+cp build/raw2wav.wasm web/js/raw2wav.wasm
+
+cp build/abcm2ps.js web/js/abcm2ps.js
+cp build/abcm2ps.wasm web/js/abcm2ps.wasm
