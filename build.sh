@@ -61,7 +61,7 @@ emcc -obuild/abcm2ps.js build/abcm2ps.o build/abcparse.o build/buffer.o build/de
 
 
 #
-# relese to web directory
+# release to web directory
 #
 cp build/abc2midi.js web/js/abc2midi.js
 cp build/abc2midi.wasm web/js/abc2midi.wasm
