@@ -68,6 +68,8 @@ cp build/abc2midi.wasm web/js/abc2midi.wasm
 
 cp build/midi2raw.js web/js/midi2raw.js
 cp build/midi2raw.wasm web/js/midi2raw.wasm
+cp -r deps/freepats/Drum_000 web/freepats
+cp -r deps/freepats/Tone_000 web/freepats
 
 cp build/raw2wav.js web/js/raw2wav.js
 cp build/raw2wav.wasm web/js/raw2wav.wasm
