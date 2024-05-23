@@ -3,15 +3,16 @@ window.onload = async (e) => {
     let elemTextAbc = document.querySelector("#textAbc");
     let updateScore = async () => {
         let dataSvg = await runAbcm2Ps (elemTextAbc.value);
-        {
-            let blobSvg = new Blob ([dataSvg],{type:"image/svg+xml"});
-            let reader = new FileReader();
-            reader.onload = (e) => {
-                let imageSvg = document.querySelector("#imageSvg");
-                imageSvg.src = reader.result;
-            };
-            reader.readAsDataURL(blobSvg);
-        }
+        let blobSvg = new Blob ([dataSvg],{type:"image/svg+xml"});
+        let reader = new FileReader();
+        reader.onload = (e) => {
+            let imageSvg = document.querySelector("#imageSvg");
+            imageSvg.src = reader.result;
+            let downloadSvg = document.querySelector("#downloadSvg");
+            downloadSvg.download = "music1.svg";
+            downloadSvg.href = reader.result;
+        };
+        reader.readAsDataURL(blobSvg);
     }
     updateScore();
 
@@ -20,12 +21,35 @@ window.onload = async (e) => {
     };
     document.querySelector("#buttonEncode").onclick = async (e) => {
         let dataMidi = await runAbc2Midi (elemTextAbc.value);
-        let dataRaw = await runMidi2Raw (dataMidi);
-        let dataWav = await runRaw2Wav (dataRaw);
+        {
+            let blobMidi = new Blob ([dataMidi],{type:"audio/midi"});
+            let reader = new FileReader();
+            reader.onload = (e) => {
+                let downloadMidi = document.querySelector("#downloadMidi");
+                downloadMidi.download = "music1.midi";
+                downloadMidi.href = reader.result;
+            };
+            reader.readAsDataURL(blobMidi);
+        }
+        let dataPcm = await runMidi2Raw (dataMidi);
+        {
+            let blobPcm = new Blob ([dataPcm],{type:"audio/pcm;rate=44100;bits=16;channels=2"});
+            let reader = new FileReader();
+            reader.onload = (e) => {
+                let downloadPcm = document.querySelector("#downloadPcm");
+                downloadPcm.download = "music1.raw";
+                downloadPcm.href = reader.result;
+            };
+            reader.readAsDataURL(blobPcm);
+        }
+        let dataWav = await runRaw2Wav (dataPcm);
         {
             let blobWav = new Blob ([dataWav],{type:"audio/wav"});
             let reader = new FileReader();
             reader.onload = (e) => {
+                let downloadWav = document.querySelector("#downloadWav");
+                downloadWav.download = "music1.wav";
+                downloadWav.href = reader.result;
                 let audio = document.querySelector("#audioWav");
                 audio.src = reader.result;
                 audio.play();
@@ -37,8 +61,8 @@ window.onload = async (e) => {
 
 let abcm2ps = null;
 async function runAbcm2Ps (textAbc) {
-    const abcFilename = "file1.abc"
-    const svgFilename = "file1"
+    const abcFilename = "music1.abc"
+    const svgFilename = "music1"
 //    if (abcm2ps === null) {
 //        abcm2ps = await createAbcm2Ps();
 //    }
@@ -54,8 +78,8 @@ async function runAbcm2Ps (textAbc) {
 
 let abc2midi = null;
 async function runAbc2Midi (textAbc) {
-    const abcFilename = "file1.abc"
-    const midiFilename = "file1.midi"
+    const abcFilename = "music1.abc"
+    const midiFilename = "music1.midi"
     if (abc2midi === null) {
         abc2midi = await createAbc2Midi();
     }
@@ -72,8 +96,8 @@ let midi2raw = null;
 async function runMidi2Raw (dataMidi) {
     const cfgPath = "freepats/timidity.cfg";
     const pianoPatPath = "freepats/Tone_000/000_Acoustic_Grand_Piano.pat";
-    const midiFilename = "file1.midi";
-    const rawFilename = "file1.raw";
+    const midiFilename = "music1.midi";
+    const rawFilename = "music1.raw";
     if (midi2raw === null) {
         midi2raw = await createMidi2Raw();
         let dataPianoPat = await fetchFile(pianoPatPath);
@@ -92,8 +116,8 @@ async function runMidi2Raw (dataMidi) {
 
 let raw2wav = null;
 async function runRaw2Wav (dataRaw) {
-    const rawFilename = "file1.raw"
-    const wavFilename = "file1.wav"
+    const rawFilename = "music1.raw"
+    const wavFilename = "music1.wav"
     if (raw2wav === null) {
         raw2wav = await createRaw2Wav();
     }
@@ -113,20 +137,3 @@ async function fetchFile(url) {
     return data;
 }
 
-function downloadBlob (data, filename, mimeType) {
-  let blob = new Blob([data], {type: mimeType});
-  let url = window.URL.createObjectURL(blob);
-  let downloadURL = function(url) {
-    let a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.style = 'display: none';
-    a.click();
-    a.remove();
-  };
-  downloadURL(url);
-  setTimeout(function() {
-  return window.URL.revokeObjectURL(url);
-  }, 1000);
-}
