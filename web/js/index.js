@@ -61,7 +61,8 @@ window.onload = async (e) => {
 
 
 
-const timidityCfgPath = "freepats/timidity.cfg";
+//const timidityCfgPath = "freepats/timidity.cfg";
+const timidityCfgPath = "freepats/timidity1.cfg";
 //
 // [TODO] loading message
 //
@@ -74,7 +75,7 @@ let midi2raw = await createMidi2Raw();
     let dataCfg = await fetchFile(timidityCfgPath);
     midi2raw.FS.writeFile(timidityCfgPath,dataCfg);
     {
-        let lineRE = new RegExp(/\s\d+\s([^\s]+)(\s.+)?/);
+        let lineRE = new RegExp(/^\s\d+\s([^\s]+)(\s.+)?/);
         let decoder = new TextDecoder();
         let textCfg = decoder.decode(dataCfg);
         let textCfgLines = textCfg.split("\n");
