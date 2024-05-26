@@ -59,14 +59,50 @@ window.onload = async (e) => {
     };
 }
 
-let abcm2ps = null;
+
+
+const timidityCfgPath = "freepats/timidity.cfg";
+//
+// [TODO] loading message
+//
+let abc2midi = await createAbc2Midi();
+let midi2raw = await createMidi2Raw();
+{
+    midi2raw.FS.mkdir("freepats");
+    midi2raw.FS.mkdir("freepats/Drum_000");
+    midi2raw.FS.mkdir("freepats/Tone_000");
+    let dataCfg = await fetchFile(timidityCfgPath);
+    midi2raw.FS.writeFile(timidityCfgPath,dataCfg);
+    {
+        let lineRE = new RegExp(/\s\d+\s([^\s]+)(\s.+)?/);
+        let decoder = new TextDecoder();
+        let textCfg = decoder.decode(dataCfg);
+        let textCfgLines = textCfg.split("\n");
+        for (let i in textCfgLines) {
+            let line = textCfgLines[i];
+            let lineMatches = lineRE.exec(line);
+            if (lineMatches) {
+                let patFilename = "freepats/" + lineMatches[1];
+                let dataPat = await fetchFile(patFilename);
+                midi2raw.FS.writeFile(patFilename,dataPat);
+            }
+        }
+    }
+}
+let raw2wav = await createRaw2Wav();
+
+
+//
+//[TODO] reuse instance
+//
+//let abcm2ps = null;
 async function runAbcm2Ps (textAbc) {
     const abcFilename = "music1.abc"
     const svgFilename = "music1"
 //    if (abcm2ps === null) {
 //        abcm2ps = await createAbcm2Ps();
 //    }
-    abcm2ps = await createAbcm2Ps();
+    let abcm2ps = await createAbcm2Ps();
     let encoder = new TextEncoder();
     let dataAbc = encoder.encode(textAbc);
     abcm2ps.FS.writeFile(abcFilename,dataAbc);
@@ -76,13 +112,9 @@ async function runAbcm2Ps (textAbc) {
 }
 
 
-let abc2midi = null;
 async function runAbc2Midi (textAbc) {
     const abcFilename = "music1.abc"
     const midiFilename = "music1.midi"
-    if (abc2midi === null) {
-        abc2midi = await createAbc2Midi();
-    }
     let encoder = new TextEncoder();
     let dataAbc = encoder.encode(textAbc);
     abc2midi.FS.writeFile(abcFilename,dataAbc);
@@ -92,35 +124,19 @@ async function runAbc2Midi (textAbc) {
 }
 
 
-let midi2raw = null;
 async function runMidi2Raw (dataMidi) {
-    const cfgPath = "freepats/timidity.cfg";
-    const pianoPatPath = "freepats/Tone_000/000_Acoustic_Grand_Piano.pat";
     const midiFilename = "music1.midi";
     const rawFilename = "music1.raw";
-    if (midi2raw === null) {
-        midi2raw = await createMidi2Raw();
-        let dataPianoPat = await fetchFile(pianoPatPath);
-        let dataCfg = await fetchFile(cfgPath);
-        midi2raw.FS.mkdir("freepats");
-        midi2raw.FS.mkdir("freepats/Tone_000");
-        midi2raw.FS.writeFile(cfgPath,dataCfg);
-        midi2raw.FS.writeFile(pianoPatPath,dataPianoPat);
-    }
     midi2raw.FS.writeFile(midiFilename,dataMidi);
-    midi2raw.callMain(["-cfg",cfgPath,"-o",rawFilename,midiFilename, "-r", "44100", "-s", "16", "-c", "2"]);
+    midi2raw.callMain(["-cfg",timidityCfgPath,"-o",rawFilename,midiFilename, "-r", "44100", "-s", "16", "-c", "2"]);
     let dataRaw = midi2raw.FS.readFile(rawFilename);
     return dataRaw;
 }
 
 
-let raw2wav = null;
 async function runRaw2Wav (dataRaw) {
     const rawFilename = "music1.raw"
     const wavFilename = "music1.wav"
-    if (raw2wav === null) {
-        raw2wav = await createRaw2Wav();
-    }
     raw2wav.FS.writeFile(rawFilename,dataRaw);
     raw2wav.callMain([rawFilename,wavFilename,"44100","16","2"]);
     let dataWav = raw2wav.FS.readFile(wavFilename);
