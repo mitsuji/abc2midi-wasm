@@ -61,8 +61,8 @@ window.onload = async (e) => {
 
 
 
-//const timidityCfgPath = "freepats/timidity.cfg";
-const timidityCfgPath = "freepats/timidity1.cfg";
+const timidityCfgPath = "freepats/timidity.cfg";
+//const timidityCfgPath = "freepats/timidity1.cfg";
 //
 // [TODO] loading message
 //
@@ -88,6 +88,8 @@ let midi2raw = await createMidi2Raw();
                 midi2raw.FS.writeFile(patFilename,dataPat);
             }
         }
+        let timidityCfg = readTimidityCfg(dataCfg);
+        console.log(timidityCfg);
     }
 }
 let raw2wav = await createRaw2Wav();
@@ -154,3 +156,44 @@ async function fetchFile(url) {
     return data;
 }
 
+
+function readTimidityCfg(dataCfg) {
+    const dirRE     = new RegExp(/^dir\s([^\s]+)$/);
+    const drumsetRE = new RegExp(/^drumset\s(\d+)$/);
+    const bankRE    = new RegExp(/^bank\s(\d+)$/);
+    const patRE     = new RegExp(/^\s(\d+)\s([^\s]+)(\s.*)?$/);
+
+    let decoder = new TextDecoder();
+    let textCfg = decoder.decode(dataCfg);
+    let textCfgLines = textCfg.split("\n");
+    let drumset = {};
+    let bank = {};
+    let pats;
+    for (let i in textCfgLines) {
+        let line = textCfgLines[i];
+
+        if (dirRE.test(line)) {
+            continue;
+        }
+
+        if (drumsetRE.test(line)) {
+            pats = drumset;
+            continue;
+        }
+
+        if (bankRE.test(line)) {
+            pats = bank;
+            continue;
+        }
+
+        let patMatches = patRE.exec(line);
+        if (patMatches) {
+            let key = patMatches[1];
+            let filename = patMatches[2];
+            pats[key] = filename;
+            continue;
+        }
+
+    }
+    return {drumset:drumset,bank:bank};
+}
