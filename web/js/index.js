@@ -62,7 +62,6 @@ window.onload = async (e) => {
 
 
 const timidityCfgPath = "freepats/timidity.cfg";
-//const timidityCfgPath = "freepats/timidity1.cfg";
 //
 // [TODO] loading message
 //
