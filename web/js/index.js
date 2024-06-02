@@ -1,8 +1,17 @@
 
 window.onload = async (e) => {
     let elemTextAbc = document.querySelector("#textAbc");
+    let elemButtonEncode = document.querySelector("#buttonEncode");
+
+    ////
+    //// [TODO] loading message
+    ////
+    elemButtonEncode.disabled = true;
+    await crotchet.init();
+    elemButtonEncode.disabled = false;
+
     let updateScore = async () => {
-        let dataSvg = await runAbcm2Ps (elemTextAbc.value);
+        let dataSvg = await crotchet.runAbcm2Ps (elemTextAbc.value);
         let blobSvg = new Blob ([dataSvg],{type:"image/svg+xml"});
         let reader = new FileReader();
         reader.onload = (e) => {
@@ -14,13 +23,13 @@ window.onload = async (e) => {
         };
         reader.readAsDataURL(blobSvg);
     };
-    updateScore();
+    await updateScore();
 
     elemTextAbc.oninput = async (e) => {
-        updateScore();
+        await updateScore();
     };
-    document.querySelector("#buttonEncode").onclick = async (e) => {
-        let dataMidi = await runAbc2Midi (elemTextAbc.value);
+    elemButtonEncode.onclick = async (e) => {
+        let dataMidi = await crotchet.runAbc2Midi (elemTextAbc.value);
         {
             let blobMidi = new Blob ([dataMidi],{type:"audio/midi"});
             let reader = new FileReader();
@@ -31,7 +40,7 @@ window.onload = async (e) => {
             };
             reader.readAsDataURL(blobMidi);
         }
-        let dataPcm = await runMidi2Raw (dataMidi);
+        let dataPcm = await crotchet.runMidi2Raw (dataMidi);
         {
             let blobPcm = new Blob ([dataPcm],{type:"audio/pcm;rate=44100;bits=16;channels=2"});
             let reader = new FileReader();
@@ -42,7 +51,7 @@ window.onload = async (e) => {
             };
             reader.readAsDataURL(blobPcm);
         }
-        let dataWav = await runRaw2Wav (dataPcm);
+        let dataWav = await crotchet.runRaw2Wav (dataPcm);
         {
             let blobWav = new Blob ([dataWav],{type:"audio/wav"});
             let reader = new FileReader();
@@ -62,89 +71,78 @@ window.onload = async (e) => {
 
 
 const timidityCfgPath = "freepats/timidity.cfg";
-//
-// [TODO] loading message
-//
-let abc2midi = await createAbc2Midi();
-let midi2raw = await createMidi2Raw();
-let timidityCfg;
-{
-    midi2raw.FS.mkdir("freepats");
-    midi2raw.FS.mkdir("freepats/Drum_000");
-    midi2raw.FS.mkdir("freepats/Tone_000");
-    let dataCfg = await fetchFile(timidityCfgPath);
-    midi2raw.FS.writeFile(timidityCfgPath,dataCfg);
-    {
-        timidityCfg = readTimidityCfg(dataCfg);
+
+const crotchet = {
+    abc2midi: undefined,
+    timidityCfg: undefined,
+    midi2raw: undefined,
+    raw2wav: undefined,
+    init: async function () {
+        this.abc2midi = await createAbc2Midi();
+        let dataCfg = await fetchFile(timidityCfgPath);
+        this.timidityCfg = readTimidityCfg(dataCfg);
+        this.midi2raw = await createMidi2Raw();
+        this.midi2raw.FS.mkdir("freepats");
+        this.midi2raw.FS.mkdir("freepats/Drum_000");
+        this.midi2raw.FS.mkdir("freepats/Tone_000");
+        this.midi2raw.FS.writeFile(timidityCfgPath,dataCfg);
         // load drumset pats
-        for (let filename of Object.values(timidityCfg.drumset)) {
+        for (let filename of Object.values(this.timidityCfg.drumset)) {
             let patFilename = "freepats/" + filename;
             let dataPat = await fetchFile(patFilename);
-            midi2raw.FS.writeFile(patFilename,dataPat);
+            this.midi2raw.FS.writeFile(patFilename,dataPat);
         }
-    }
-}
-let raw2wav = await createRaw2Wav();
-
-
-//
-//[TODO] reuse instance
-//
-//let abcm2ps = null;
-async function runAbcm2Ps (textAbc) {
-    const abcFilename = "music1.abc"
-    const svgFilename = "music1"
-//    if (abcm2ps === null) {
-//        abcm2ps = await createAbcm2Ps();
-//    }
-    let abcm2ps = await createAbcm2Ps();
-    let encoder = new TextEncoder();
-    let dataAbc = encoder.encode(textAbc);
-    abcm2ps.FS.writeFile(abcFilename,dataAbc);
-    abcm2ps.callMain([abcFilename, "-g", "-O", svgFilename]);
-    let dataSvg = abcm2ps.FS.readFile(svgFilename + "001.svg");
-    return dataSvg;
-}
-
-
-async function runAbc2Midi (textAbc) {
-    const abcFilename = "music1.abc"
-    const midiFilename = "music1.midi"
-    let patNums = patsFromAbcText(textAbc);
-    // load bank pats
-    for(let patNum of patNums) {
-        let filename = timidityCfg.bank[patNum];
-        let patFilename = "freepats/" + filename;
-        let dataPat = await fetchFile(patFilename);
-        midi2raw.FS.writeFile(patFilename,dataPat);
-    }
-    let encoder = new TextEncoder();
-    let dataAbc = encoder.encode(textAbc);
-    abc2midi.FS.writeFile(abcFilename,dataAbc);
-    abc2midi.callMain([abcFilename, "-o", midiFilename]);
-    let dataMidi = abc2midi.FS.readFile(midiFilename);
-    return dataMidi;
-}
-
-
-async function runMidi2Raw (dataMidi) {
-    const midiFilename = "music1.midi";
-    const rawFilename = "music1.raw";
-    midi2raw.FS.writeFile(midiFilename,dataMidi);
-    midi2raw.callMain(["-cfg",timidityCfgPath,"-o",rawFilename,midiFilename, "-r", "44100", "-s", "16", "-c", "2"]);
-    let dataRaw = midi2raw.FS.readFile(rawFilename);
-    return dataRaw;
-}
-
-
-async function runRaw2Wav (dataRaw) {
-    const rawFilename = "music1.raw"
-    const wavFilename = "music1.wav"
-    raw2wav.FS.writeFile(rawFilename,dataRaw);
-    raw2wav.callMain([rawFilename,wavFilename,"44100","16","2"]);
-    let dataWav = raw2wav.FS.readFile(wavFilename);
-    return dataWav;
-}
+        this.raw2wav = await createRaw2Wav();
+    },
+    runAbcm2Ps: async function (textAbc) {
+        const abcFilename = "music1.abc"
+        const svgFilename = "music1"
+        //
+        //[TODO] reuse instance
+        //
+        let abcm2ps = await createAbcm2Ps();
+        let encoder = new TextEncoder();
+        let dataAbc = encoder.encode(textAbc);
+        abcm2ps.FS.writeFile(abcFilename,dataAbc);
+        abcm2ps.callMain([abcFilename, "-g", "-O", svgFilename]);
+        let dataSvg = abcm2ps.FS.readFile(svgFilename + "001.svg");
+        return dataSvg;
+    },
+    runAbc2Midi: async function (textAbc) {
+        const abcFilename = "music1.abc"
+        const midiFilename = "music1.midi"
+        let patNums = patsFromAbcText(textAbc);
+        // load bank pats
+        for(let patNum of patNums) {
+            let filename = this.timidityCfg.bank[patNum];
+            let patFilename = "freepats/" + filename;
+            let dataPat = await fetchFile(patFilename);
+            this.midi2raw.FS.writeFile(patFilename,dataPat);
+        }
+        let encoder = new TextEncoder();
+        let dataAbc = encoder.encode(textAbc);
+        this.abc2midi.FS.writeFile(abcFilename,dataAbc);
+        this.abc2midi.callMain([abcFilename, "-o", midiFilename]);
+        let dataMidi = this.abc2midi.FS.readFile(midiFilename);
+        return dataMidi;
+    },
+    runMidi2Raw: async function (dataMidi) {
+        const midiFilename = "music1.midi";
+        const rawFilename = "music1.raw";
+        this.midi2raw.FS.writeFile(midiFilename,dataMidi);
+        this.midi2raw.callMain(["-cfg",timidityCfgPath,"-o",rawFilename,midiFilename, "-r", "44100", "-s", "16", "-c", "2"]);
+        let dataRaw = this.midi2raw.FS.readFile(rawFilename);
+        return dataRaw;
+    },
+    runRaw2Wav: async function (dataRaw) {
+        const rawFilename = "music1.raw"
+        const wavFilename = "music1.wav"
+        this.raw2wav.FS.writeFile(rawFilename,dataRaw);
+        this.raw2wav.callMain([rawFilename,wavFilename,"44100","16","2"]);
+        let dataWav = this.raw2wav.FS.readFile(wavFilename);
+        return dataWav;
+    },
+};
 
 
 
