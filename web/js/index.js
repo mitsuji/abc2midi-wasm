@@ -13,7 +13,7 @@ window.onload = async (e) => {
             downloadSvg.href = reader.result;
         };
         reader.readAsDataURL(blobSvg);
-    }
+    };
     updateScore();
 
     elemTextAbc.oninput = async (e) => {
@@ -61,13 +61,13 @@ window.onload = async (e) => {
 
 
 
-//const timidityCfgPath = "freepats/timidity.cfg";
-const timidityCfgPath = "freepats/timidity1.cfg";
+const timidityCfgPath = "freepats/timidity.cfg";
 //
 // [TODO] loading message
 //
 let abc2midi = await createAbc2Midi();
 let midi2raw = await createMidi2Raw();
+let timidityCfg;
 {
     midi2raw.FS.mkdir("freepats");
     midi2raw.FS.mkdir("freepats/Drum_000");
@@ -75,18 +75,12 @@ let midi2raw = await createMidi2Raw();
     let dataCfg = await fetchFile(timidityCfgPath);
     midi2raw.FS.writeFile(timidityCfgPath,dataCfg);
     {
-        let lineRE = new RegExp(/^\s\d+\s([^\s]+)(\s.+)?/);
-        let decoder = new TextDecoder();
-        let textCfg = decoder.decode(dataCfg);
-        let textCfgLines = textCfg.split("\n");
-        for (let i in textCfgLines) {
-            let line = textCfgLines[i];
-            let lineMatches = lineRE.exec(line);
-            if (lineMatches) {
-                let patFilename = "freepats/" + lineMatches[1];
-                let dataPat = await fetchFile(patFilename);
-                midi2raw.FS.writeFile(patFilename,dataPat);
-            }
+        timidityCfg = readTimidityCfg(dataCfg);
+        // load drumset pats
+        for (let filename of Object.values(timidityCfg.drumset)) {
+            let patFilename = "freepats/" + filename;
+            let dataPat = await fetchFile(patFilename);
+            midi2raw.FS.writeFile(patFilename,dataPat);
         }
     }
 }
@@ -116,6 +110,14 @@ async function runAbcm2Ps (textAbc) {
 async function runAbc2Midi (textAbc) {
     const abcFilename = "music1.abc"
     const midiFilename = "music1.midi"
+    let patNums = patsFromAbcText(textAbc);
+    // load bank pats
+    for(let patNum of patNums) {
+        let filename = timidityCfg.bank[patNum];
+        let patFilename = "freepats/" + filename;
+        let dataPat = await fetchFile(patFilename);
+        midi2raw.FS.writeFile(patFilename,dataPat);
+    }
     let encoder = new TextEncoder();
     let dataAbc = encoder.encode(textAbc);
     abc2midi.FS.writeFile(abcFilename,dataAbc);
@@ -154,3 +156,96 @@ async function fetchFile(url) {
     return data;
 }
 
+
+function patsFromAbcText(textAbc) {
+    let getPatNum = (matches) => {
+        let patNum;
+        if (matches[2]){
+            if(matches[4]){
+                patNum = matches[4]; // "program c n"
+            } else {
+                patNum = matches[2]; // "program n"
+            }
+        } else if (matches[5]) {
+            patNum = matches[5]; // "chordprog n"
+        } else if (matches[6]) {
+            patNum = matches[6]; // "bassprog n"
+        }
+        return patNum;
+    };
+
+    let patNums = {0:undefined}; // piano only
+    let lines = textAbc.split("\n");
+    for (let i in lines) {
+        let line = lines [i];
+
+        // "%%MIDI program n"
+        // "%%MIDI program c n"
+        // "%%MIDI chordprog n"
+        // "%%MIDI bassprog n"
+        let commandMatches = line.match(/^\%\%MIDI\s(program\s(\d+)(\s(\d+))?|chordprog\s(\d+)|bassprog\s(\d+))$/);
+        if(commandMatches) {
+            let patNum = getPatNum(commandMatches);
+            patNums[patNum] = undefined; // key only
+        }
+
+        // [I: MIDI = program n MIDI=program c n MIDI=chordprog n MIDI=bassprog n]
+        let arrInlineMatches = line.matchAll(/\[I\:([^\]]+)\]/g);
+        if(arrInlineMatches) {
+            for(let inlineMatches of arrInlineMatches) {
+                let commands = inlineMatches[1];
+                let arrCommandMatches
+                    = commands.matchAll(/\s?MIDI\s?=\s?(program\s(\d+)(\s(\d+))?|chordprog\s(\d+)|bassprog\s(\d+))/g);
+                if(arrCommandMatches) {
+                    for(let commandMatches of arrCommandMatches) {
+                        let patNum = getPatNum(commandMatches);
+                        patNums[patNum] = undefined; // key only
+                    }
+                }
+            }
+        }
+
+    }
+    return Object.keys(patNums);
+}
+
+function readTimidityCfg(dataCfg) {
+    const dirRE     = new RegExp(/^dir\s([^\s]+)$/);
+    const drumsetRE = new RegExp(/^drumset\s(\d+)$/);
+    const bankRE    = new RegExp(/^bank\s(\d+)$/);
+    const patRE     = new RegExp(/^\s(\d+)\s([^\s]+)(\s.*)?$/);
+
+    let decoder = new TextDecoder();
+    let textCfg = decoder.decode(dataCfg);
+    let textCfgLines = textCfg.split("\n");
+    let drumset = {};
+    let bank = {};
+    let pats;
+    for (let i in textCfgLines) {
+        let line = textCfgLines[i];
+
+        if (dirRE.test(line)) {
+            continue;
+        }
+
+        if (drumsetRE.test(line)) {
+            pats = drumset;
+            continue;
+        }
+
+        if (bankRE.test(line)) {
+            pats = bank;
+            continue;
+        }
+
+        let patMatches = patRE.exec(line);
+        if (patMatches) {
+            let key = patMatches[1];
+            let filename = patMatches[2];
+            pats[key] = filename;
+            continue;
+        }
+
+    }
+    return {drumset:drumset,bank:bank};
+}
