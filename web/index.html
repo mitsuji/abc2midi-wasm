@@ -5,6 +5,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>crotchet</title>
+    <link rel="stylesheet" type="text/css" href="./css/modal.css">
     <script type="text/javascript" src="./js/abcm2ps.js"></script>
     <script type="text/javascript" src="./js/abc2midi.js"></script>
     <script type="text/javascript" src="./js/midi2raw.js"></script>
@@ -49,5 +50,12 @@ C C D D E E F F | E2 D2 C4 |]
         <a id="downloadWav">WAV</a>
       </div>
     </form>
+    <div id="divToast" class="modal-overlay" style="z-index:100;">
+      <div class="modal-content-auto">
+        <div style="margin:10px 10px;">
+          <div class="message"></div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

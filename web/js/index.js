@@ -1,13 +1,24 @@
 
 window.onload = async (e) => {
+    let elemDivToast = document.querySelector("#divToast");
     let elemTextAbc = document.querySelector("#textAbc");
     let elemButtonEncode = document.querySelector("#buttonEncode");
 
-    ////
-    //// [TODO] loading message
-    ////
+    let showToast = (message) => {
+        elemDivToast.querySelector(".message").innerHTML = message;
+        elemDivToast.style.visibility="visible";
+    };
+    let hideToast = () => {
+        elemDivToast.querySelector(".message").innerHTML = "";
+        elemDivToast.style.visibility="hidden";
+    };
+    hideToast();
+
+
     elemButtonEncode.disabled = true;
+    showToast("now loading...");
     await crotchet.init();
+    hideToast();
     elemButtonEncode.disabled = false;
 
     let updateScore = async () => {
