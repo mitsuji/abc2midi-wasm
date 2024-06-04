@@ -17,7 +17,10 @@ window.onload = async (e) => {
 
     elemButtonEncode.disabled = true;
     showToast("now loading...");
-    await crotchet.init();
+    await crotchet.init((total,index,filename) => {
+        let message = "loading " + index + "/" + total + " " + filename;
+        showToast(message);
+    });
     hideToast();
     elemButtonEncode.disabled = false;
 
@@ -88,7 +91,7 @@ const crotchet = {
     timidityCfg: undefined,
     midi2raw: undefined,
     raw2wav: undefined,
-    init: async function () {
+    init: async function (onprogress) {
         this.abc2midi = await createAbc2Midi();
         let dataCfg = await fetchFile(timidityCfgPath);
         this.timidityCfg = readTimidityCfg(dataCfg);
@@ -98,7 +101,10 @@ const crotchet = {
         this.midi2raw.FS.mkdir("freepats/Tone_000");
         this.midi2raw.FS.writeFile(timidityCfgPath,dataCfg);
         // load drumset pats
-        for (let filename of Object.values(this.timidityCfg.drumset)) {
+        let filenames = Object.values(this.timidityCfg.drumset);
+        for (let i in filenames) {
+            let filename = filenames[i];
+            onprogress(filenames.length,i,filename);
             let patFilename = "freepats/" + filename;
             let dataPat = await fetchFile(patFilename);
             this.midi2raw.FS.writeFile(patFilename,dataPat);
@@ -124,11 +130,13 @@ const crotchet = {
         const midiFilename = "music1.midi"
         let patNums = patsFromAbcText(textAbc);
         // load bank pats
-        for(let patNum of patNums) {
+        for (let patNum of patNums) {
             let filename = this.timidityCfg.bank[patNum];
-            let patFilename = "freepats/" + filename;
-            let dataPat = await fetchFile(patFilename);
-            this.midi2raw.FS.writeFile(patFilename,dataPat);
+            if (filename) {
+                let patFilename = "freepats/" + filename;
+                let dataPat = await fetchFile(patFilename);
+                this.midi2raw.FS.writeFile(patFilename,dataPat);
+            }
         }
         let encoder = new TextEncoder();
         let dataAbc = encoder.encode(textAbc);
@@ -170,7 +178,7 @@ function patsFromAbcText(textAbc) {
     let getPatNum = (matches) => {
         let patNum;
         if (matches[2]){
-            if(matches[4]){
+            if (matches[4]){
                 patNum = matches[4]; // "program c n"
             } else {
                 patNum = matches[2]; // "program n"
@@ -185,8 +193,7 @@ function patsFromAbcText(textAbc) {
 
     let patNums = {0:undefined}; // piano only
     let lines = textAbc.split("\n");
-    for (let i in lines) {
-        let line = lines [i];
+    for (let line of lines) {
 
         // "%%MIDI program n"
         // "%%MIDI program c n"
@@ -201,12 +208,12 @@ function patsFromAbcText(textAbc) {
         // [I: MIDI = program n MIDI=program c n MIDI=chordprog n MIDI=bassprog n]
         let arrInlineMatches = line.matchAll(/\[I\:([^\]]+)\]/g);
         if(arrInlineMatches) {
-            for(let inlineMatches of arrInlineMatches) {
+            for (let inlineMatches of arrInlineMatches) {
                 let commands = inlineMatches[1];
                 let arrCommandMatches
                     = commands.matchAll(/\s?MIDI\s?=\s?(program\s(\d+)(\s(\d+))?|chordprog\s(\d+)|bassprog\s(\d+))/g);
                 if(arrCommandMatches) {
-                    for(let commandMatches of arrCommandMatches) {
+                    for (let commandMatches of arrCommandMatches) {
                         let patNum = getPatNum(commandMatches);
                         patNums[patNum] = undefined; // key only
                     }
@@ -230,8 +237,7 @@ function readTimidityCfg(dataCfg) {
     let drumset = {};
     let bank = {};
     let pats;
-    for (let i in textCfgLines) {
-        let line = textCfgLines[i];
+    for (let line of textCfgLines) {
 
         if (dirRE.test(line)) {
             continue;
