@@ -13,16 +13,24 @@ window.onload = async (e) => {
         elemDivToast.style.visibility="hidden";
     };
     hideToast();
+    let withToast = async (proc) => {
+        try {
+            await proc();
+        } catch (e) {
+            hideToast();
+            throw e;
+        }
+        hideToast();
+    }
 
 
-    elemButtonEncode.disabled = true;
     showToast("now loading...");
-    await crotchet.init((total,index,filename) => {
-        let message = "loading " + index + "/" + total + " " + filename;
-        showToast(message);
+    withToast(async () => {
+        await crotchet.init((total,index,filename) => {
+            let message = "loading " + index + "/" + total + " " + filename;
+            showToast(message);
+        });
     });
-    hideToast();
-    elemButtonEncode.disabled = false;
 
     let updateScore = async () => {
         let dataSvg = await crotchet.runAbcm2Ps (elemTextAbc.value);
@@ -43,42 +51,51 @@ window.onload = async (e) => {
         await updateScore();
     };
     elemButtonEncode.onclick = async (e) => {
-        let dataMidi = await crotchet.runAbc2Midi (elemTextAbc.value);
-        {
-            let blobMidi = new Blob ([dataMidi],{type:"audio/midi"});
-            let reader = new FileReader();
-            reader.onload = (e) => {
-                let downloadMidi = document.querySelector("#downloadMidi");
-                downloadMidi.download = "music1.midi";
-                downloadMidi.href = reader.result;
-            };
-            reader.readAsDataURL(blobMidi);
-        }
-        let dataPcm = await crotchet.runMidi2Raw (dataMidi);
-        {
-            let blobPcm = new Blob ([dataPcm],{type:"audio/pcm;rate=44100;bits=16;channels=2"});
-            let reader = new FileReader();
-            reader.onload = (e) => {
-                let downloadPcm = document.querySelector("#downloadPcm");
-                downloadPcm.download = "music1.raw";
-                downloadPcm.href = reader.result;
-            };
-            reader.readAsDataURL(blobPcm);
-        }
-        let dataWav = await crotchet.runRaw2Wav (dataPcm);
-        {
-            let blobWav = new Blob ([dataWav],{type:"audio/wav"});
-            let reader = new FileReader();
-            reader.onload = (e) => {
-                let downloadWav = document.querySelector("#downloadWav");
-                downloadWav.download = "music1.wav";
-                downloadWav.href = reader.result;
-                let audio = document.querySelector("#audioWav");
-                audio.src = reader.result;
-                audio.play();
-            };
-            reader.readAsDataURL(blobWav);
-        }
+        withToast(async () => {
+            showToast("now encoding...");
+            showToast("now converting ABC to MIDI...");
+            let dataMidi = await crotchet.runAbc2Midi (elemTextAbc.value, (total,index,filename) => {
+                let message = "loading " + index + "/" + total + " " + filename;
+                showToast(message);
+            });
+            {
+                let blobMidi = new Blob ([dataMidi],{type:"audio/midi"});
+                let reader = new FileReader();
+                reader.onload = (e) => {
+                    let downloadMidi = document.querySelector("#downloadMidi");
+                    downloadMidi.download = "music1.midi";
+                    downloadMidi.href = reader.result;
+                };
+                reader.readAsDataURL(blobMidi);
+            }
+            showToast("now converting MIDI to PCM...");
+            let dataPcm = await crotchet.runMidi2Raw (dataMidi);
+            {
+                let blobPcm = new Blob ([dataPcm],{type:"audio/pcm;rate=44100;bits=16;channels=2"});
+                let reader = new FileReader();
+                reader.onload = (e) => {
+                    let downloadPcm = document.querySelector("#downloadPcm");
+                    downloadPcm.download = "music1.raw";
+                    downloadPcm.href = reader.result;
+                };
+                reader.readAsDataURL(blobPcm);
+            }
+            showToast("now converting PCN to WAV...");
+            let dataWav = await crotchet.runRaw2Wav (dataPcm);
+            {
+                let blobWav = new Blob ([dataWav],{type:"audio/wav"});
+                let reader = new FileReader();
+                reader.onload = (e) => {
+                    let downloadWav = document.querySelector("#downloadWav");
+                    downloadWav.download = "music1.wav";
+                    downloadWav.href = reader.result;
+                    let audio = document.querySelector("#audioWav");
+                    audio.src = reader.result;
+                    audio.play();
+                };
+                reader.readAsDataURL(blobWav);
+            }
+        });
     };
 }
 
@@ -125,15 +142,17 @@ const crotchet = {
         let dataSvg = abcm2ps.FS.readFile(svgFilename + "001.svg");
         return dataSvg;
     },
-    runAbc2Midi: async function (textAbc) {
+    runAbc2Midi: async function (textAbc,onprogress) {
         const abcFilename = "music1.abc"
         const midiFilename = "music1.midi"
         let patNums = patsFromAbcText(textAbc);
         // load bank pats
-        for (let patNum of patNums) {
+        for (let i in patNums) {
+            let patNum = patNums[i];
             let filename = this.timidityCfg.bank[patNum];
             if (filename) {
                 let patFilename = "freepats/" + filename;
+                onprogress(patNums.length,i,filename);
                 let dataPat = await fetchFile(patFilename);
                 this.midi2raw.FS.writeFile(patFilename,dataPat);
             }
