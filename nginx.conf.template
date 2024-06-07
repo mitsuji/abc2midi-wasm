@@ -24,6 +24,8 @@ http {
   server {  
     listen 8080;
 #    return 200 "Hello, World!";
-    root ${PWD}/web;
+    location /crotchet {
+      alias ${PWD}/web;
+    }
   }  
 }
