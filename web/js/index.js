@@ -1,5 +1,9 @@
 
 window.onload = async (e) => {
+    if ("serviceWorker" in navigator) {
+        await navigator.serviceWorker.register("./sw.js", { scope: "./", });
+    }
+
     let elemDivToast = document.querySelector("#divToast");
     let elemTextAbc = document.querySelector("#textAbc");
     let elemButtonEncode = document.querySelector("#buttonEncode");
