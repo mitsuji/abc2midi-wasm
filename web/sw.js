@@ -1,4 +1,4 @@
-const CACHE_NAME = "v1";
+const CACHE_NAME = "v2";
 
 const putInCache = async (request, response) => {
   const cache = await caches.open(CACHE_NAME);
@@ -19,6 +19,21 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(cacheFirst(event.request));
 });
 
+
+const deleteCache = async (key) => {
+  await caches.delete(key);
+};
+
+const deleteOldCaches = async () => {
+  const cacheKeepList = [CACHE_NAME];
+  const keyList = await caches.keys();
+  const cachesToDelete = keyList.filter((key) => !cacheKeepList.includes(key));
+  await Promise.all(cachesToDelete.map(deleteCache));
+};
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(deleteOldCaches());
+});
 
 
 //const addResourcesToCache = async () => {
